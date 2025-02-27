@@ -83,5 +83,6 @@ RUN wget https://developer.nvidia.com/isaac-gym-preview-4 -O isaac.tar.gz \
     && tar -xzf isaac.tar.gz -C . \
     && pip install -e isaacgym/python
 RUN git clone https://github.com/NVIDIA-Omniverse/IsaacGymEnvs.git && pip install -e IsaacGymEnvs
+RUN pip install "numpy==1.20.0"
 
 # `pip install -e .` the pql repo here

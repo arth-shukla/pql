@@ -1,0 +1,298 @@
+_wandb:
+    value:
+        cli_version: 0.19.7
+        m: []
+        python_version: 3.8.20
+        t:
+            "1":
+                - 1
+                - 30
+                - 50
+                - 55
+            "2":
+                - 1
+                - 30
+                - 50
+                - 55
+            "3":
+                - 3
+                - 16
+                - 23
+                - 33
+                - 55
+                - 61
+            "4": 3.8.20
+            "5": 0.19.7
+            "8":
+                - 5
+            "12": 0.19.7
+            "13": linux-x86_64
+algo:
+    value:
+        act_class: TanhMLPPolicy
+        actor_lr: 0.0005
+        batch_size: 8192
+        cri_class: DistributionalDoubleQ
+        critic_actor_ratio: 2
+        critic_lr: 0.0005
+        critic_sample_ratio: 8
+        distl: true
+        eval_freq: 200
+        gamma: 0.99
+        handle_timeout: true
+        horizon_len: 1
+        log_freq: 2
+        max_grad_norm: 0.5
+        memory_size: 5e+06
+        name: PQL
+        no_tgt_actor: true
+        noise:
+            decay: null
+            exp_decay_rate: 0.99
+            lin_decay_iters: 10000
+            std_max: 0.8
+            std_min: 0.05
+            tgt_pol_noise_bound: 0.2
+            tgt_pol_std: 0.8
+            type: mixed
+        nstep: 3
+        num_atoms: 51
+        num_cpus: 40
+        num_gpus: 1
+        obs_norm: true
+        p_learner_gpu: 0
+        reward_scale: 0.01
+        tau: 0.05
+        tracker_len: 100
+        v_learner_gpu: 0
+        v_max: 10
+        v_min: -10
+        value_norm: false
+        warm_up: 32
+artifact:
+    value: null
+available_gpus:
+    value: 1
+device:
+    value: cuda
+eval_headless:
+    value: true
+eval_num_envs:
+    value: 150
+graphics_device_id:
+    value: 0
+headless:
+    value: true
+hostname:
+    value: arth-pc-linux
+info_track_keys:
+    value: null
+info_track_step:
+    value: null
+isaac_param:
+    value: false
+logging:
+    value:
+        wandb:
+            entity: null
+            group: null
+            mode: online
+            name: null
+            project: pql-sweep
+            settings:
+                ignore_globs:
+                    - '*.pt'
+            tags: null
+max_step:
+    value: null
+max_time:
+    value: 4800
+num_envs:
+    value: 4096
+num_subscenes:
+    value: 4
+num_threads:
+    value: 4
+physics_engine:
+    value: physx
+pipeline:
+    value: gpu
+rl_device:
+    value: cuda
+seed:
+    value: 42
+sim_device:
+    value: cuda
+solver_type:
+    value: 1
+task:
+    value:
+        env:
+            actionPenaltyScale: -0.0002
+            actionsMovingAverage: 1
+            aggregateMode: 1
+            asset:
+                assetFileName: urdf/kuka_allegro_description/allegro_touch_sensor.urdf
+                assetFileNameBlock: urdf/objects/cube_multicolor_allegro.urdf
+                assetFileNameEgg: mjcf/open_ai_assets/hand/egg.xml
+                assetFileNamePen: mjcf/open_ai_assets/hand/pen.xml
+            asymmetric_observations: false
+            clipActions: 1
+            clipObservations: 5
+            controlFrequencyInv: 2
+            distRewardScale: -10
+            dofSpeedScale: 20
+            enableCameraSensors: false
+            enableDebugVis: false
+            envSpacing: 0.75
+            episodeLength: 600
+            fallDistance: 0.24
+            fallPenalty: 0
+            forceDecay: 0.99
+            forceDecayInterval: 0.08
+            forceLimitScale: 1
+            forceProbRange:
+                - 0.001
+                - 0.1
+            forceScale: 0
+            maxConsecutiveSuccesses: 0
+            numEnvs: 4096
+            objectType: block
+            observationType: full_state
+            printNumSuccesses: false
+            reachGoalBonus: 250
+            resetDofPosRandomInterval: 0.2
+            resetDofVelRandomInterval: 0
+            resetPositionNoise: 0.01
+            resetRotationNoise: 0
+            rotEps: 0.1
+            rotRewardScale: 1
+            startObjectPoseDY: -0.19
+            startObjectPoseDZ: 0.06
+            startPositionNoise: 0.01
+            startRotationNoise: 0
+            stiffnessScale: 1
+            successTolerance: 0.1
+            useRelativeControl: false
+        name: AllegroHand
+        physics_engine: physx
+        sim:
+            dt: 0.01667
+            gravity:
+                - 0
+                - 0
+                - -9.81
+            physx:
+                bounce_threshold_velocity: 0.2
+                contact_collection: 0
+                contact_offset: 0.002
+                default_buffer_size_multiplier: 5
+                max_depenetration_velocity: 1000
+                max_gpu_contact_pairs: 8388608
+                num_position_iterations: 8
+                num_subscenes: 4
+                num_threads: 4
+                num_velocity_iterations: 0
+                rest_offset: 0
+                solver_type: 1
+                use_gpu: true
+            substeps: 2
+            up_axis: z
+            use_gpu_pipeline: true
+        task:
+            randomization_params:
+                actions:
+                    distribution: gaussian
+                    operation: additive
+                    range:
+                        - 0
+                        - 0.05
+                    range_correlated:
+                        - 0
+                        - 0.015
+                actor_params:
+                    hand:
+                        color: true
+                        dof_properties:
+                            damping:
+                                distribution: loguniform
+                                operation: scaling
+                                range:
+                                    - 0.3
+                                    - 3
+                            lower:
+                                distribution: gaussian
+                                operation: additive
+                                range:
+                                    - 0
+                                    - 0.01
+                            stiffness:
+                                distribution: loguniform
+                                operation: scaling
+                                range:
+                                    - 0.75
+                                    - 1.5
+                            upper:
+                                distribution: gaussian
+                                operation: additive
+                                range:
+                                    - 0
+                                    - 0.01
+                        rigid_body_properties:
+                            mass:
+                                distribution: uniform
+                                operation: scaling
+                                range:
+                                    - 0.5
+                                    - 1.5
+                                setup_only: true
+                        rigid_shape_properties:
+                            friction:
+                                distribution: uniform
+                                num_buckets: 250
+                                operation: scaling
+                                range:
+                                    - 0.7
+                                    - 1.3
+                    object:
+                        rigid_body_properties:
+                            mass:
+                                distribution: uniform
+                                operation: scaling
+                                range:
+                                    - 0.5
+                                    - 1.5
+                                setup_only: true
+                        rigid_shape_properties:
+                            friction:
+                                distribution: uniform
+                                num_buckets: 250
+                                operation: scaling
+                                range:
+                                    - 0.7
+                                    - 1.3
+                        scale:
+                            distribution: uniform
+                            operation: scaling
+                            range:
+                                - 0.95
+                                - 1.05
+                            setup_only: true
+                frequency: 720
+                observations:
+                    distribution: gaussian
+                    operation: additive
+                    range:
+                        - 0
+                        - 0.002
+                    range_correlated:
+                        - 0
+                        - 0.001
+                sim_params:
+                    gravity:
+                        distribution: gaussian
+                        operation: additive
+                        range:
+                            - 0
+                            - 0.4
+            randomize: false
