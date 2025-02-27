@@ -22,6 +22,7 @@ from pql.utils.evaluator import Evaluator
 from pql.utils.isaacgym_util import create_task_env
 from pql.utils.common import capture_keyboard_interrupt
 from pql.utils.common import preprocess_cfg
+from pql.utils.time import NonOverlappingTimeProfiler
 
 
 @hydra.main(config_path=pql.LIB_PATH.joinpath('cfg').as_posix(), config_name="default")
@@ -91,6 +92,9 @@ def main(cfg: DictConfig):
                 f"{'actor_loss':>12s}"
                 f"{'v-updates':>12s}"
                 f"{'p-updates':>12s}")
+    
+    # timer
+    timer = NonOverlappingTimeProfiler()
 
     for iter_t in count():
         p_data, v_data, steps = pql_actor.explore_env(env, cfg.algo.horizon_len, random=False)
@@ -158,30 +162,43 @@ def main(cfg: DictConfig):
         time.sleep(sim_wait_time)
 
         log_info = {
-            "train/critic_loss": critic_loss,
-            "train/actor_loss": actor_loss,
-            "train/return": pql_actor.return_tracker.mean(),
-            "train/episode_length": pql_actor.step_tracker.mean(),
+            "losses/qf_mean_loss": critic_loss,
+            "losses/actor_loss": actor_loss,
+            #
             "train/critic_update_times": critic_update_times,
             "train/actor_update_times": actor_update_times,
-            "train/global_steps": global_steps
+            "train/global_steps": global_steps,
+            #
+            "train/ep_return": pql_actor.return_tracker.mean(),
+            "train/len": pql_actor.step_tracker.mean(),
         }
         pql_actor.add_info_tracker_log(log_info)
 
-        if evaluator.parent.poll():
-            return_dict = evaluator.parent.recv()
-            wandb.log(return_dict, step=global_steps)
+        timer.end("rollout+update")
+
+        if cfg.algo.eval_freq is not None:
+            if evaluator.parent.poll():
+                return_dict: dict = evaluator.parent.recv()
+                time_logs = {f"time/{k}": v for k, v in timer.get_time_logs(global_steps).items()}
+                return_dict.update(time_logs)
+                wandb.log(return_dict, step=global_steps)
+                timer.end("eval")
         if iter_t % cfg.algo.log_freq == 0:
+            time_logs = {f"time/{k}": v for k, v in timer.get_time_logs(global_steps).items()}
+            log_info.update(time_logs)
             wandb.log(log_info, step=global_steps)
-        if iter_t % cfg.algo.eval_freq == 0:
+            timer.end("log")
+        if (cfg.algo.eval_freq is not None) and (iter_t % cfg.algo.eval_freq == 0):
             logger.info(f"{global_steps:12.2e}"
                         f"{time.time() - evaluator.start_time:>12.1f}"
-                        f"{log_info['train/critic_loss']:12.2f}"
-                        f"{log_info['train/actor_loss']:12.2f}"
+                        f"{log_info['losses/qf_mean_loss']:12.2f}"
+                        f"{log_info['losses/actor_loss']:12.2f}"
                         f"{log_info['train/critic_update_times']:12.2f}"
                         f"{log_info['train/actor_update_times']:12.2f}")
             evaluator.eval_policy(pql_actor.actor, critic, normalizer=pql_actor.obs_rms,
                                   step=global_steps)
+            
+            timer.end("eval")
 
         if evaluator.check_if_should_stop(global_steps):
             break
