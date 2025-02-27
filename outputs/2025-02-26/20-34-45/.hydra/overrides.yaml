@@ -1,6 +1,0 @@
-- task=AllegroHand
-- algo.distl=True
-- algo.cri_class=DistributionalDoubleQ
-- algo.num_gpus=1
-- algo.p_learner_gpu=0
-- algo.v_learner_gpu=0
