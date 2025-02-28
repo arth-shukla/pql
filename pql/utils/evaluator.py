@@ -30,6 +30,8 @@ class Evaluator:
 
     def eval_policy(self, policy, value, step=0, normalizer=None):
         self.parent.send([cloudpickle.dumps(policy), cloudpickle.dumps(value), step, normalizer])
+        # Wait for and return the evaluation results
+        return self.parent.recv()
 
     def check_if_should_stop(self, step=None):
         if self.cfg.max_step is not None:
@@ -105,7 +107,7 @@ def default_rollout(cfg, wandb_run, child, create_task_env_func=None):
 
             ret_mean = return_tracker.mean()
             step_mean = step_tracker.mean()
-            return_dict = {'eval/return': ret_mean, 'eval/episode_length': step_mean}
+            return_dict = {'eval/ep_return': ret_mean, 'eval/len': step_mean}
             if cfg.info_track_keys is not None:
                 for key in cfg.info_track_keys:
                     return_dict[f'eval/{key}'] = info_trackers[key].mean()

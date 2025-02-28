@@ -39,6 +39,8 @@ def main(cfg: DictConfig):
     wandb_run = init_wandb(cfg)
     env = create_task_env(cfg)
 
+    assert cfg.algo.eval_freq % cfg.algo.log_freq == 0
+
     sim_device = torch.device(f"{cfg.sim_device}")
     v_learner_device = torch.device(f"cuda:{cfg.algo.v_learner_gpu}")
     p_learner_device = torch.device(f"cuda:{cfg.algo.p_learner_gpu}")
@@ -176,29 +178,24 @@ def main(cfg: DictConfig):
 
         timer.end("rollout+update")
 
-        if cfg.algo.eval_freq is not None:
-            if evaluator.parent.poll():
-                return_dict: dict = evaluator.parent.recv()
-                time_logs = {f"time/{k}": v for k, v in timer.get_time_logs(global_steps).items()}
-                return_dict.update(time_logs)
-                wandb.log(return_dict, step=global_steps)
-                timer.end("eval")
         if iter_t % cfg.algo.log_freq == 0:
+            if (cfg.algo.eval_freq is not None) and (iter_t % cfg.algo.eval_freq == 0):
+                logger.info(f"{global_steps:12.2e}"
+                            f"{time.time() - evaluator.start_time:>12.1f}"
+                            f"{log_info['losses/qf_mean_loss']:12.2f}"
+                            f"{log_info['losses/actor_loss']:12.2f}"
+                            f"{log_info['train/critic_update_times']:12.2f}"
+                            f"{log_info['train/actor_update_times']:12.2f}")
+                return_dict = evaluator.eval_policy(pql_actor.actor, critic, normalizer=pql_actor.obs_rms,
+                                    step=global_steps)
+                log_info.update(return_dict)
+                timer.end("eval")
+
             time_logs = {f"time/{k}": v for k, v in timer.get_time_logs(global_steps).items()}
             log_info.update(time_logs)
+
             wandb.log(log_info, step=global_steps)
             timer.end("log")
-        if (cfg.algo.eval_freq is not None) and (iter_t % cfg.algo.eval_freq == 0):
-            logger.info(f"{global_steps:12.2e}"
-                        f"{time.time() - evaluator.start_time:>12.1f}"
-                        f"{log_info['losses/qf_mean_loss']:12.2f}"
-                        f"{log_info['losses/actor_loss']:12.2f}"
-                        f"{log_info['train/critic_update_times']:12.2f}"
-                        f"{log_info['train/actor_update_times']:12.2f}")
-            evaluator.eval_policy(pql_actor.actor, critic, normalizer=pql_actor.obs_rms,
-                                  step=global_steps)
-            
-            timer.end("eval")
 
         if evaluator.check_if_should_stop(global_steps):
             break
