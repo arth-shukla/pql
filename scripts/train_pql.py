@@ -22,6 +22,7 @@ from pql.utils.evaluator import Evaluator
 from pql.utils.isaacgym_util import create_task_env
 from pql.utils.common import capture_keyboard_interrupt
 from pql.utils.common import preprocess_cfg
+from pql.utils.model_util import save_model
 from pql.utils.time import NonOverlappingTimeProfiler
 
 
@@ -38,6 +39,8 @@ def main(cfg: DictConfig):
     set_random_seed(cfg.seed)
     wandb_run = init_wandb(cfg)
     env = create_task_env(cfg)
+
+    last_save_time = 0
 
     assert cfg.algo.eval_freq % cfg.algo.log_freq == 0
 
@@ -179,23 +182,25 @@ def main(cfg: DictConfig):
         timer.end("rollout+update")
 
         if iter_t % cfg.algo.log_freq == 0:
-            if (cfg.algo.eval_freq is not None) and (iter_t % cfg.algo.eval_freq == 0):
-                logger.info(f"{global_steps:12.2e}"
-                            f"{time.time() - evaluator.start_time:>12.1f}"
-                            f"{log_info['losses/qf_mean_loss']:12.2f}"
-                            f"{log_info['losses/actor_loss']:12.2f}"
-                            f"{log_info['train/critic_update_times']:12.2f}"
-                            f"{log_info['train/actor_update_times']:12.2f}")
-                return_dict = evaluator.eval_policy(pql_actor.actor, critic, normalizer=pql_actor.obs_rms,
-                                    step=global_steps)
-                log_info.update(return_dict)
-                timer.end("eval")
-
             time_logs = {f"time/{k}": v for k, v in timer.get_time_logs(global_steps).items()}
             log_info.update(time_logs)
 
             wandb.log(log_info, step=global_steps)
             timer.end("log")
+
+        # NOTE (arth): this is basically the same as total elapsed time  since log time is minimal, but whatever
+        curr_rollout_update_time = timer.time_cost["rollout+update"]
+        if curr_rollout_update_time - last_save_time >= 15: # save every minute
+            save_path = f"{wandb_run.dir}/{curr_rollout_update_time}.pt"
+            save_model(
+                path=save_path,
+                actor=pql_actor.actor.state_dict(),
+                critic=critic.state_dict(),
+                rms=pql_actor.obs_rms.get_states(),
+                wandb_run=wandb_run,
+                ret_max=0
+            )
+            last_save_time = curr_rollout_update_time
 
         if evaluator.check_if_should_stop(global_steps):
             break
