@@ -8,7 +8,7 @@ from pql.wrappers.flatten_ob import FlatObEnvWrapper
 from pql.wrappers.reset import ResetEnvWrapper
 
 
-def create_maniskill_task_env(cfg, num_envs=None):
+def create_maniskill_task_env(cfg, num_envs=None, eval=False):
     import mani_skill.envs
     from mani_skill.vector.wrappers.gymnasium import ManiSkillVectorEnv
 
@@ -40,6 +40,10 @@ def create_maniskill_task_env(cfg, num_envs=None):
     else:
         task_cfg["render_mode"] = "rgb_array"
 
+    env_kwargs = dict()
+    if eval:
+        env_kwargs["reconfiguration_freq"] = 1
+
     env = gym.make(
         task_cfg["name"],
         num_envs=num_envs if num_envs is not None else task_cfg["num_envs"],
@@ -53,6 +57,7 @@ def create_maniskill_task_env(cfg, num_envs=None):
         sim_config=dict(
             sim_freq=100, control_freq=20, **task_cfg.get("sim_config", dict())
         ),
+        **env_kwargs
     )
     env = ManiSkillVectorEnv(
         env,
@@ -83,8 +88,8 @@ def create_isaacgym_task_env(cfg, num_envs=None):
     return env
 
 
-def create_task_env(cfg, num_envs=None):
+def create_task_env(cfg, num_envs=None, eval=False):
     if cfg.task.get("suite", "maniskill") == "maniskill":
-        return create_maniskill_task_env(cfg, num_envs)
+        return create_maniskill_task_env(cfg, num_envs, eval)
     else:
         return create_isaacgym_task_env(cfg, num_envs)

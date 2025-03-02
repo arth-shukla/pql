@@ -11,7 +11,11 @@ PROJECT_NAME=ManiSkill-PQL
 EXP_NAME="$ENV_ID/$GROUP/$EXP"
 
 NUM_ENVS=4096
+BATCH_SIZE=8192
 MAX_EPISODE_STEPS=50
+
+MAX_MINS=6
+MAX_TIME=$((MAX_MINS * 60))
 
 #############################################
 
@@ -36,8 +40,12 @@ python scripts/train_pql.py \
     logging.workspace="$WORKSPACE" \
     logging.clear_out=True \
     \
-    max_time=120
-
-python scripts/evaluate_pql.py \
-    --config_path outputs/2025-03-01/12-33-33/.hydra/config.yaml \
-    --ckpt_dir outputs/2025-03-01/12-33-33/wandb/run-20250301_123338-2sjofds0/files
+    max_time=$MAX_TIME \
+    \
+    algo.gamma=0.8 \
+    algo.batch_size=$BATCH_SIZE \
+    # \
+    # algo.memory_size=1_000_000
+    # algo.max_grad_norm=null \
+    # algo.nstep=1 \
+    # algo.warm_up=128

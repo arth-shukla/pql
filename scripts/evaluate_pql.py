@@ -29,11 +29,19 @@ def default_rollout(env, cfg, actor, normalizer):
 
         eval_rewbuffer = []
         eval_lenbuffer = []
+        eval_soncebuffer = []
+        eval_sendbuffer = []
         eval_cur_reward_sum = torch.zeros(
             num_envs, dtype=torch.float, device=cfg.device
         )
         eval_cur_episode_length = torch.zeros(
             num_envs, dtype=torch.float, device=cfg.device
+        )
+        eval_cur_sonce = torch.zeros(
+            num_envs, dtype=torch.bool, device=cfg.device
+        )
+        eval_cur_send = torch.zeros(
+            num_envs, dtype=torch.bool, device=cfg.device
         )
         obs = env.reset()
         for _ in range(max_step):  # run an episode
@@ -47,6 +55,11 @@ def default_rollout(env, cfg, actor, normalizer):
             eval_cur_reward_sum += reward
             eval_cur_episode_length += 1
 
+            if "success" in info:
+                success = info["success"].to(torch.bool)
+                eval_cur_sonce |= success
+                eval_cur_send[:] = success
+
             if torch.any(done):
                 eval_rewbuffer.extend(
                     eval_cur_reward_sum[done].tolist()
@@ -56,13 +69,24 @@ def default_rollout(env, cfg, actor, normalizer):
                 )
                 eval_cur_reward_sum[done] = 0
                 eval_cur_episode_length[done] = 0
+                if "success" in info:
+                    eval_soncebuffer.extend(
+                        eval_cur_sonce[done].tolist()
+                    )
+                    eval_sendbuffer.extend(
+                        eval_cur_send[done].tolist()
+                    )
+                    eval_cur_sonce[done] = 0
+                    eval_cur_send[done] = 0
 
             obs = next_obs
 
-    return dict(
-        ep_return=statistics.mean(eval_rewbuffer),
-        len=statistics.mean(eval_lenbuffer),
-    )
+    return {
+        "eval/ep_return": statistics.mean(eval_rewbuffer),
+        "eval/len": statistics.mean(eval_lenbuffer),
+        "eval/success_once": statistics.mean(eval_soncebuffer),
+        "eval/success_at_end": statistics.mean(eval_sendbuffer),
+    }
 
 
 def main(cfg: DictConfig, ckpt_dir):
@@ -70,7 +94,7 @@ def main(cfg: DictConfig, ckpt_dir):
 
     set_random_seed(cfg.seed)
     capture_keyboard_interrupt()
-    env = create_task_env(cfg, num_envs=cfg.eval_num_envs)
+    env = create_task_env(cfg, num_envs=cfg.eval_num_envs, eval=True)
     device = torch.device(cfg.device)
     obs_dim = env.observation_space.shape
     action_dim = env.action_space.shape[0]
@@ -80,9 +104,11 @@ def main(cfg: DictConfig, ckpt_dir):
     obs_rms = RunningMeanStd(shape=obs_dim, device=device)
 
     running_eval_logs = {
-        "rollout+update_time": [],
-        "ep_return": [],
-        "len": [],
+        "time/rollout+update_time": [],
+        "eval/ep_return": [],
+        "eval/len": [],
+        "eval/success_once": [],
+        "eval/success_at_end": [],
     }
     eval_log_path = ckpt_dir / "eval_log.yml"
     file_names = sorted([x for x in os.listdir(ckpt_dir) if x.endswith(".pt")], key=lambda x: float(x[:-3]))
@@ -93,14 +119,16 @@ def main(cfg: DictConfig, ckpt_dir):
         obs_rms.load_state_dict(ckpt["obs_rms"])
         eval_logs = default_rollout(env, cfg, actor, obs_rms)
 
-        running_eval_logs["rollout+update_time"].append(float(ckpt_path.stem))
-        running_eval_logs["ep_return"].append(eval_logs["ep_return"])
-        running_eval_logs["len"].append(eval_logs["len"])
+        running_eval_logs["time/rollout+update_time"].append(float(ckpt_path.stem))
+        running_eval_logs["eval/ep_return"].append(eval_logs["eval/ep_return"])
+        running_eval_logs["eval/len"].append(eval_logs["eval/len"])
+        running_eval_logs["eval/success_once"].append(eval_logs["eval/success_once"])
+        running_eval_logs["eval/success_at_end"].append(eval_logs["eval/success_at_end"])
 
         # Write evaluation logs to yaml file
         with open(eval_log_path, "w") as f:
             yaml.dump(running_eval_logs, f)
-        print(f"{float(ckpt_path.stem):.4f} {eval_logs['ep_return']:.4f} {eval_logs['len']:.4f}", sep="\t")
+        print(f"{float(ckpt_path.stem):.4f}\t{eval_logs['eval/ep_return']:.4f}\t{eval_logs['eval/len']:.4f}\t{eval_logs['eval/success_once']:.4f}\t{eval_logs['eval/success_at_end']:.4f}", sep="\t")
     
 
 
