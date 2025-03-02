@@ -7,4 +7,6 @@ wandb:
   name: null
   settings:
     ignore_globs: [ '*.pt' ]
+clear_out: true
+workspace: outputs
 

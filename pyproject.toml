@@ -9,7 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.7, <3.9"
+python = "3.9"
 gym = ">=0.26.0"
 hydra-core = ">=1.2.0"
 loguru = ">=0.6.0"
@@ -19,6 +19,7 @@ cloudpickle = ">=2.2.0"
 scipy = ">=1.7.3"
 shortuuid = ">=1.0.11"
 ninja = ">=1.11"
+tensorboard = "2.11.2"
 
 [tool.poetry.dev-dependencies]
 

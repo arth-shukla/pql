@@ -165,3 +165,5 @@ nautilus/
 outputs/
 wandb/
 hidden/
+ManiSkill/
+.vscode/

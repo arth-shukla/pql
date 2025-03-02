@@ -1,4 +1,9 @@
-import isaacgym
+import sys
+
+
+if sys.version_info < (3, 9):
+    # NOTE (arth): import first to avoid importing after torch:
+    import isaacgym
 
 import os
 from pathlib import Path
@@ -15,8 +20,7 @@ from pql.utils.isaacgym_util import create_task_env
 from pql.utils.common import capture_keyboard_interrupt
 from pql.utils.common import load_class_from_path
 from pql.models import model_name_to_path
-from pql.utils.torch_util import RunningMeanStd 
-from pql.utils.isaacgym_util import create_task_env
+from pql.utils.torch_util import RunningMeanStd
 
 def default_rollout(env, cfg, actor, normalizer):
     with torch.inference_mode():

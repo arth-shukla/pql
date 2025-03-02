@@ -25,6 +25,11 @@ class PQLActor:
         self.current_returns = torch.zeros(self.cfg.num_envs, dtype=torch.float32, device=self.sim_device)
         self.current_lengths = torch.zeros(self.cfg.num_envs, dtype=torch.float32, device=self.sim_device)
 
+        self.current_sonces = torch.zeros(self.cfg.num_envs, dtype=torch.bool, device=self.sim_device)
+        self.current_sends = torch.zeros(self.cfg.num_envs, dtype=torch.bool, device=self.sim_device)
+        self.sonce_tracker = Tracker(self.cfg.algo.tracker_len)
+        self.send_tracker = Tracker(self.cfg.algo.tracker_len)
+
         info_track_keys = self.cfg.info_track_keys
         if info_track_keys is not None:
             info_track_keys = [info_track_keys] if isinstance(info_track_keys, str) else info_track_keys
@@ -134,6 +139,14 @@ class PQLActor:
         self.step_tracker.update(self.current_lengths[env_done_indices])
         self.current_returns[env_done_indices] = 0
         self.current_lengths[env_done_indices] = 0
+        if "success" in info:
+            _success = info["success"].to(torch.bool)
+            self.current_sonces |= _success
+            self.current_sends[:] = _success
+            self.sonce_tracker.update(self.current_sonces[env_done_indices])
+            self.send_tracker.update(self.current_sends[env_done_indices])
+            self.current_sonces[env_done_indices] = 0
+            self.current_sends[env_done_indices] = 0
 
         if self.cfg.info_track_keys is not None:
             for key in self.cfg.info_track_keys:

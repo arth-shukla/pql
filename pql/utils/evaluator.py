@@ -41,10 +41,7 @@ class Evaluator:
 
 
 def default_rollout(cfg, wandb_run, child, create_task_env_func=None):
-    if sys.version_info.minor >= 8:
-        import pickle
-    else:
-        import pickle5 as pickle
+    import pickle
 
     cfg.headless = cfg.eval_headless
     if create_task_env_func is None:
