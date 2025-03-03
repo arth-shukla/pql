@@ -1,24 +1,20 @@
 #!/usr/bin/bash
 
-for CRITIC_ACTOR_RATIO in 1 2 4 8; do
-
-for CRITIC_SAMPLE_RATIO in 1 2 4 8; do
-
 SEED=2024
 # Task args
-ENV_ID=PickCube-v1
+ENV_ID=PegInsertionSide-v1
 WORKSPACE=outputs
-EXP="v3-${SEED}"
-GROUP="${ENV_ID}-pql-${CRITIC_ACTOR_RATIO}-${CRITIC_SAMPLE_RATIO}"
+EXP="v0-${SEED}"
+GROUP="${ENV_ID}-pql-2-8"
 ENTITY=sumanoid
-PROJECT_NAME=ManiSkill-PQL
+PROJECT_NAME=ManiSkill-PQL-PegInsertion
 EXP_NAME="$ENV_ID/$GROUP/$EXP"
 
 NUM_ENVS=4096
 BATCH_SIZE=8192
-MAX_EPISODE_STEPS=50
+MAX_EPISODE_STEPS=100
 
-MAX_MINS=3
+MAX_MINS=60
 MAX_TIME=$((MAX_MINS * 60))
 
 #############################################
@@ -32,8 +28,8 @@ python scripts/train_pql.py \
     \
     algo.num_gpus=1 \
     algo.p_learner_gpu=0 algo.v_learner_gpu=0 \
-    algo.critic_actor_ratio=$CRITIC_ACTOR_RATIO \
-    algo.critic_sample_ratio=$CRITIC_SAMPLE_RATIO \
+    algo.critic_actor_ratio=2 \
+    algo.critic_sample_ratio=8 \
     algo.distl=False \
     algo.cri_class=DoubleQ \
     \
@@ -46,10 +42,5 @@ python scripts/train_pql.py \
     \
     max_time=$MAX_TIME \
     \
-    algo.gamma=0.8 \
-    algo.batch_size=$BATCH_SIZE \
-    algo.memory_size=1_000_000 \
-    algo.warm_up=128
-
-done
-done
+    algo.gamma=0.99 \
+    algo.batch_size=$BATCH_SIZE

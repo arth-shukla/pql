@@ -167,3 +167,5 @@ wandb/
 hidden/
 ManiSkill/
 .vscode/
+nohup*
+
